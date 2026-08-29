@@ -1,0 +1,50 @@
+{
+  "studioUrl": "https://studio.tripo3d.ai/workspace/generate",
+  "inputDir": "inputs",
+  "profileDir": ".runtime/browser-profile",
+  "stateFile": ".runtime/state.json",
+  "artifactDir": ".runtime/artifacts",
+  "browserChannel": "msedge",
+  "headless": false,
+  "loginTimeoutMs": 600000,
+  "uploadTimeoutMs": 120000,
+  "submissionConfirmTimeoutMs": 30000,
+  "submissionDelayMs": 3000,
+  "uploadSettleDelayMs": 5000,
+  "stageTimeoutMs": 1200000,
+  "stageSettleDelayMs": 5000,
+  "targetFaces": 10000,
+  "textureResolution": "8K",
+  "maxImageBytes": 20971520,
+  "views": [
+    {
+      "slot": "front",
+      "fileNames": ["front.png", "front.jpg", "front.jpeg", "front.webp", "正面.png", "正面.jpg"]
+    },
+    {
+      "slot": "left",
+      "fileNames": ["left.png", "left.jpg", "left.jpeg", "left.webp", "左侧.png", "左侧.jpg"]
+    },
+    {
+      "slot": "right",
+      "fileNames": ["right.png", "right.jpg", "right.jpeg", "right.webp", "右侧.png", "右侧.jpg"]
+    }
+  ],
+  "selectors": {
+    "multiViewButton": "button:has(> [class~=\"i-tripo:multi-view\"])",
+    "imageInputs": "input[type=\"file\"][accept*=\"image\"]",
+    "generateButton": "",
+    "submissionConfirmation": "",
+    "submissionError": "",
+    "hdModeButton": "text=\"HD Model\"",
+    "retopologyNav": "text=\"Retopo\"",
+    "triangleButton": "text=\"Triangle\"",
+    "smartLowPolySwitch": "button[role=\"switch\"]",
+    "polygonCountInput": "input[type=\"number\"]",
+    "retopologyButton": "button:has-text(\"Retopology\")",
+    "textureNav": "text=\"Texture\"",
+    "texture8kButton": "text=\"8K\"",
+    "textureButton": "button:has-text(\"Generate Texture\")",
+    "exportButton": "button:has-text(\"Export\")"
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "name": "tripo-studio-queue",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "通过 Tripo Studio 可见网页界面顺序提交多视图生成任务",
+  "scripts": {
+    "start": "node src/cli.js run",
+    "login": "node src/cli.js login",
+    "scan": "node src/cli.js scan",
+    "preview": "node src/cli.js preview",
+    "pipeline": "node src/cli.js pipeline",
+    "status": "node src/cli.js status",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "playwright-core": "^1.55.0"
+  }
+}

@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <title>Mock Tripo Studio</title>
+  </head>
+  <body>
+    <h1>生成模型</h1>
+    <button id="single-view" type="button"><span class="i-tripo:add-image"></span></button>
+    <button id="multi-view" type="button"><span class="i-tripo:multi-view"></span></button>
+    <main id="workspace"></main>
+    <button id="generate" type="button" disabled>Generate 55</button>
+    <p id="submission" data-testid="submission" hidden>Submitted</p>
+    <p id="processing" hidden></p>
+    <button id="hd-mode" type="button" aria-pressed="false">HD Model</button>
+    <button id="retopo-nav" type="button" hidden>Retopo</button>
+    <section id="retopo-panel" hidden>
+      <button id="triangle" type="button">Triangle</button>
+      <button id="smart" type="button" role="switch" aria-checked="false">Smart Low Poly v2</button>
+      <input id="polygon-count" type="number" value="5000">
+      <button id="retopology" type="button">Retopology 35</button>
+    </section>
+    <button id="texture-nav" type="button" hidden>Texture</button>
+    <section id="texture-panel" hidden>
+      <button id="texture-8k" type="button">8K</button>
+      <button id="texture" type="button">Generate Texture 30</button>
+    </section>
+    <button id="export" type="button" hidden>Export</button>
+
+    <script>
+      const slots = ["front", "left", "right", "back"];
+      const workspace = document.querySelector("#workspace");
+      const generate = document.querySelector("#generate");
+      const submission = document.querySelector("#submission");
+      const processing = document.querySelector("#processing");
+
+      function updateGenerate() {
+        const inputs = [...workspace.querySelectorAll('input[type="file"]')];
+        generate.disabled = inputs.length !== 4 || inputs.filter((input) => input.files.length === 1).length < 3 || inputs[0].files.length !== 1;
+      }
+
+      function renderMultiView() {
+        workspace.replaceChildren();
+        for (const slot of slots) {
+          const label = document.createElement("label");
+          label.textContent = slot;
+          const input = document.createElement("input");
+          input.type = "file";
+          input.accept = "image/png,image/webp,image/jpg,image/jpeg";
+          input.dataset.slot = slot;
+          input.addEventListener("change", updateGenerate);
+          label.append(input);
+          workspace.append(label);
+        }
+        updateGenerate();
+      }
+
+      setTimeout(() => {
+        document.querySelector("#multi-view").addEventListener("click", renderMultiView);
+      }, 300);
+      generate.addEventListener("click", () => {
+        submission.hidden = false;
+        submission.textContent = `Submitted ${[...workspace.querySelectorAll("input")].map((input) => input.files[0]?.name).filter(Boolean).join(",")}`;
+        processing.hidden = false;
+        processing.textContent = "Generating";
+        generate.disabled = true;
+        setTimeout(() => {
+          submission.hidden = true;
+          processing.hidden = true;
+          document.querySelector("#retopo-nav").hidden = false;
+        }, 150);
+      });
+
+      document.querySelector("#hd-mode").addEventListener("click", (event) => event.currentTarget.setAttribute("aria-pressed", "true"));
+      document.querySelector("#retopo-nav").addEventListener("click", () => document.querySelector("#retopo-panel").hidden = false);
+      document.querySelector("#smart").addEventListener("click", (event) => event.currentTarget.setAttribute("aria-checked", "true"));
+      document.querySelector("#retopology").addEventListener("click", (event) => {
+        const button = event.currentTarget;
+        button.disabled = true;
+        processing.hidden = false;
+        processing.textContent = "Retopologizing";
+        setTimeout(() => {
+          processing.hidden = true;
+          button.disabled = false;
+          document.querySelector("#texture-nav").hidden = false;
+        }, 150);
+      });
+      document.querySelector("#texture-nav").addEventListener("click", () => document.querySelector("#texture-panel").hidden = false);
+      document.querySelector("#texture-8k").addEventListener("click", (event) => event.currentTarget.dataset.selected = "true");
+      document.querySelector("#texture").addEventListener("click", (event) => {
+        const button = event.currentTarget;
+        button.disabled = true;
+        processing.hidden = false;
+        processing.textContent = "Generating Texture";
+        setTimeout(() => {
+          processing.hidden = true;
+          button.disabled = false;
+          document.querySelector("#export").hidden = false;
+        }, 150);
+      });
+    </script>
+  </body>
+</html>

@@ -1,0 +1,6 @@
+interface:
+  display_name: "Tripo Studio 全流程"
+  short_description: "安全批量执行 Tripo 三视图 HD、智能拓扑与 8K 纹理工作流"
+  default_prompt: "Use $tripo-studio-pipeline to validate my multi-view assets and safely run the Tripo Studio HD, retopology, and texture workflow."
+policy:
+  allow_implicit_invocation: true

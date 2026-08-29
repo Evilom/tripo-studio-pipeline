@@ -1,0 +1,7 @@
+tool/node_modules/
+tool/config.json
+tool/.runtime/
+tool/inputs/
+*.log
+.DS_Store
+Thumbs.db
