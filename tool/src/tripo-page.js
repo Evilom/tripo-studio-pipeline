@@ -2,10 +2,11 @@ import { mkdir } from "node:fs/promises";
 import path from "node:path";
 
 const SLOT_INDEX = { front: 0, left: 1, right: 2, back: 3 };
+const TASK_ID_RE = /[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}/i;
 const LOGIN_RE = /注册\s*\/\s*登录|注册|登录|sign\s*up|log\s*in/i;
 const GENERATE_RE = /^\s*(生成|generate)\s*\d*\s*$/i;
 const SUCCESS_RE = /任务已提交|已开始生成|生成中|正在生成|submitted|generating|processing/i;
-const PROCESSING_RE = /排队|生成中|处理中|正在生成|正在拓扑|queuing|generating|processing|retopologizing/i;
+const PROCESSING_RE = /排队|生成中|处理中|正在生成|正在拓扑|重拓扑中|纹理生成中|重绘中|queuing|generating|processing|retopologizing/i;
 const ERROR_RE = /提交失败|生成失败|积分不足|余额不足|并发.*上限|请求过多|验证码|captcha|insufficient|rate.?limit|too many|submission failed/i;
 
 export class SubmissionRejectedError extends Error {}
@@ -124,22 +125,79 @@ export class TripoStudioPage {
     throw new Error("点击多视图入口后没有出现四个图片槽位；页面可能尚未加载完成或结构已变化");
   }
 
+  async waitForUploadToLeaveInput(handle, label) {
+    try {
+      await this.page.waitForFunction(
+        (element) => !element.isConnected,
+        handle,
+        { timeout: this.config.uploadTimeoutMs },
+      );
+    } catch {
+      // 某些 Studio 版本会保留已上传的 input；保守等待后继续检查生成按钮。
+      if (this.config.uploadSettleDelayMs > 0) {
+        await this.page.waitForTimeout(this.config.uploadSettleDelayMs);
+      }
+    } finally {
+      await handle.dispose();
+    }
+  }
+
+  async prepareDynamicMultiView(asset) {
+    const bySlot = new Map(asset.files.map((file) => [file.slot, file]));
+    const expectedSlots = ["front", "left", "back"];
+    if (asset.files.length !== expectedSlots.length || expectedSlots.some((slot) => !bySlot.has(slot))) {
+      throw new Error("新版动态多视图需要 front、left、back 三张图片");
+    }
+
+    const singleView = this.configuredLocator("singleViewButton");
+    await singleView.waitFor({ state: "visible", timeout: this.config.uploadTimeoutMs });
+    await singleView.click();
+
+    const frontInput = this.imageInputs().first();
+    await frontInput.waitFor({ state: "visible", timeout: this.config.uploadTimeoutMs });
+    const frontHandle = await frontInput.elementHandle();
+    if (!frontHandle) {
+      throw new Error("front 上传槽位在选择文件前消失");
+    }
+    await frontInput.setInputFiles(bySlot.get("front").path, { timeout: this.config.uploadTimeoutMs });
+    await this.waitForUploadToLeaveInput(frontHandle, "front");
+
+    const multiView = this.configuredLocator("multiViewButton");
+    await multiView.waitFor({ state: "visible", timeout: this.config.uploadTimeoutMs });
+    await multiView.click();
+
+    for (const slot of ["left", "back"]) {
+      const input = this.imageInputs().first();
+      await input.waitFor({ state: "visible", timeout: this.config.uploadTimeoutMs });
+      const handle = await input.elementHandle();
+      if (!handle) {
+        throw new Error(`${slot}上传槽位在选择文件前消失`);
+      }
+      await input.setInputFiles(bySlot.get(slot).path, { timeout: this.config.uploadTimeoutMs });
+      await this.waitForUploadToLeaveInput(handle, slot);
+    }
+  }
+
   async prepareAsset(asset) {
     await this.openWorkspace();
     if (await this.isLoggedOut()) {
       throw new Error("登录状态已失效，请重新运行 login 命令");
     }
-    await this.ensureMultiViewMode();
+    if (this.config.dynamicMultiView) {
+      await this.prepareDynamicMultiView(asset);
+    } else {
+      await this.ensureMultiViewMode();
 
-    const inputs = this.imageInputs();
-    for (let index = 0; index < 4; index += 1) {
-      await inputs.nth(index).setInputFiles([], { timeout: this.config.uploadTimeoutMs });
-    }
+      const inputs = this.imageInputs();
+      for (let index = 0; index < 4; index += 1) {
+        await inputs.nth(index).setInputFiles([], { timeout: this.config.uploadTimeoutMs });
+      }
 
-    for (const file of asset.files) {
-      const index = SLOT_INDEX[file.slot];
-      const input = inputs.nth(index);
-      await input.setInputFiles(file.path, { timeout: this.config.uploadTimeoutMs });
+      for (const file of asset.files) {
+        const index = SLOT_INDEX[file.slot];
+        const input = inputs.nth(index);
+        await input.setInputFiles(file.path, { timeout: this.config.uploadTimeoutMs });
+      }
     }
 
     if (this.config.uploadSettleDelayMs > 0) {
@@ -163,15 +221,64 @@ export class TripoStudioPage {
     await button.click();
   }
 
+  taskId() {
+    return this.page.url().match(TASK_ID_RE)?.[0] ?? "";
+  }
+
+  async ensureCanonicalTaskRoute(section, taskId) {
+    if (!taskId) {
+      return;
+    }
+    await this.page.waitForTimeout(500);
+    const current = new URL(this.page.url());
+    const sectionRoot = `/workspace/${section}`;
+    const incompletePath = `/workspace/${section}/${taskId}`;
+    if (current.pathname !== incompletePath && current.pathname !== sectionRoot) {
+      return;
+    }
+
+    const routes = this.page.locator(`a[href^="/workspace/${section}/"][href$="${taskId}"]`);
+    const deadline = Date.now() + this.config.uploadTimeoutMs;
+    let href = "";
+    while (Date.now() < deadline && !href) {
+      const candidates = await routes.evaluateAll((links) => links
+        .map((link) => link.getAttribute("href") ?? "")
+        .filter(Boolean));
+      href = candidates.find((candidate) => candidate !== incompletePath) ?? "";
+      if (!href) await sleep(500);
+    }
+    if (href && href !== incompletePath) {
+      await this.page.goto(new URL(href, current).href, { waitUntil: "domcontentloaded" });
+    }
+  }
+
   async openRetopology() {
+    const taskId = this.taskId();
     const nav = this.configuredLocator("retopologyNav");
     await nav.waitFor({ state: "visible", timeout: this.config.stageTimeoutMs });
     await nav.click();
+    await this.ensureCanonicalTaskRoute("retopology", taskId);
     await this.configuredLocator("retopologyButton").waitFor({ state: "visible", timeout: this.config.uploadTimeoutMs });
   }
 
   async configureRetopology() {
-    await this.configuredLocator("triangleButton").click();
+    const topologyButton = this.configuredLocator(
+      this.config.topologyMode === "quad" ? "quadButton" : "triangleButton",
+    );
+    await topologyButton.waitFor({ state: "visible", timeout: this.config.uploadTimeoutMs });
+    const topologyDeadline = Date.now() + this.config.uploadTimeoutMs;
+    while (Date.now() < topologyDeadline) {
+      const pressed = await topologyButton.getAttribute("aria-pressed");
+      const state = await topologyButton.getAttribute("data-state");
+      if (pressed === "true" || state === "on") break;
+      await topologyButton.click();
+      await sleep(400);
+    }
+    const topologySelected = await topologyButton.getAttribute("aria-pressed") === "true"
+      || await topologyButton.getAttribute("data-state") === "on";
+    if (!topologySelected) {
+      throw new Error(`${this.config.topologyMode} 拓扑模式没有进入选中状态`);
+    }
 
     const toggle = this.configuredLocator("smartLowPolySwitch");
     await toggle.waitFor({ state: "visible", timeout: this.config.uploadTimeoutMs });
@@ -187,14 +294,31 @@ export class TripoStudioPage {
   }
 
   async openTexture() {
+    const taskId = this.taskId();
     const nav = this.configuredLocator("textureNav");
     await nav.waitFor({ state: "visible", timeout: this.config.stageTimeoutMs });
     await nav.click();
+    await this.ensureCanonicalTaskRoute("texture", taskId);
     await this.configuredLocator("textureButton").waitFor({ state: "visible", timeout: this.config.uploadTimeoutMs });
   }
 
   async configureTexture() {
-    await this.configuredLocator("texture8kButton").click();
+    const selector = this.config.selectors.textureResolutionButton;
+    const button = selector
+      ? this.page.locator(selector).first()
+      : this.page.getByRole("button", { name: new RegExp(`^\\s*${this.config.textureResolution}\\s*$`, "i") }).first();
+    await button.waitFor({ state: "visible", timeout: this.config.uploadTimeoutMs });
+    const deadline = Date.now() + this.config.uploadTimeoutMs;
+    while (Date.now() < deadline) {
+      const pressed = await button.getAttribute("aria-pressed");
+      const state = await button.getAttribute("data-state");
+      if (pressed === "true" || state === "on") {
+        return;
+      }
+      await button.click();
+      await sleep(400);
+    }
+    throw new Error(`${this.config.textureResolution} 纹理分辨率没有进入选中状态`);
   }
 
   async clickGenerate() {
@@ -260,6 +384,22 @@ export class TripoStudioPage {
   async clickStage(buttonName, label) {
     const button = this.configuredLocator(buttonName);
     await button.waitFor({ state: "visible", timeout: this.config.uploadTimeoutMs });
+    const enableDeadline = Date.now() + this.config.stageTimeoutMs;
+    while (Date.now() < enableDeadline && !(await button.isEnabled())) {
+      if (await this.isLoggedOut()) {
+        throw new SubmissionUncertainError(`${label}准备期间登录状态失效`);
+      }
+      if (this.config.selectors.submissionError && (await visible(this.page.locator(this.config.selectors.submissionError)))) {
+        throw new SubmissionUncertainError(`${label}准备期间页面显示失败`);
+      }
+      if (await visible(this.page.getByText(ERROR_RE))) {
+        throw new SubmissionUncertainError(`${label}准备期间页面显示积分、验证码或处理错误`);
+      }
+      await sleep(1000);
+    }
+    if (!(await button.isEnabled())) {
+      throw new SubmissionUncertainError(`${label}按钮在 ${Math.round(this.config.stageTimeoutMs / 60000)} 分钟内仍不可用`);
+    }
     const beforeUrl = this.page.url();
     await button.click();
 
@@ -340,7 +480,7 @@ export class TripoStudioPage {
   }
 
   waitForTexture() {
-    return this.waitForStageCompletion("8K 纹理", "exportButton");
+    return this.waitForStageCompletion(`${this.config.textureResolution} 纹理`, "exportButton");
   }
 
   currentUrl() {

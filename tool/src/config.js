@@ -10,6 +10,8 @@ const DEFAULTS = {
   stateFile: ".runtime/state.json",
   artifactDir: ".runtime/artifacts",
   browserChannel: "msedge",
+  cdpEndpoint: "",
+  dynamicMultiView: false,
   headless: false,
   loginTimeoutMs: 10 * 60 * 1000,
   uploadTimeoutMs: 2 * 60 * 1000,
@@ -18,11 +20,13 @@ const DEFAULTS = {
   uploadSettleDelayMs: 5000,
   stageTimeoutMs: 20 * 60 * 1000,
   stageSettleDelayMs: 5000,
-  targetFaces: 10000,
-  textureResolution: "8K",
+  topologyMode: "quad",
+  targetFaces: 2000,
+  textureResolution: "2K",
   maxImageBytes: 20 * 1024 * 1024,
   views: [],
   selectors: {
+    singleViewButton: 'button:has(> [class~="i-tripo:add-image"])',
     multiViewButton: 'button:has(> [class~="i-tripo:multi-view"])',
     imageInputs: 'input[type="file"][accept*="image"]',
     generateButton: "",
@@ -30,12 +34,13 @@ const DEFAULTS = {
     submissionError: "",
     hdModeButton: 'text="HD Model"',
     retopologyNav: 'text="Retopo"',
+    quadButton: 'text="Quad"',
     triangleButton: 'text="Triangle"',
     smartLowPolySwitch: 'button[role="switch"]',
     polygonCountInput: 'input[type="number"]',
     retopologyButton: 'button:has-text("Retopology")',
     textureNav: 'text="Texture"',
-    texture8kButton: 'text="8K"',
+    textureResolutionButton: "",
     textureButton: 'button:has-text("Generate Texture")',
     exportButton: 'button:has-text("Export")',
   },
@@ -103,6 +108,21 @@ export async function loadConfig(configArgument = "config.json") {
   };
 
   validateViews(config.views);
+  if (typeof config.dynamicMultiView !== "boolean") {
+    throw new Error("配置 dynamicMultiView 必须是布尔值");
+  }
+  if (!["quad", "triangle"].includes(config.topologyMode)) {
+    throw new Error("配置 topologyMode 只能是 quad 或 triangle");
+  }
+  if (config.dynamicMultiView) {
+    const slots = config.views.map((view) => view.slot);
+    if (slots.join(",") !== "front,left,back") {
+      throw new Error("新版动态多视图当前只支持按 front、left、back 顺序配置三个视图");
+    }
+    if (!config.selectors.singleViewButton) {
+      throw new Error("dynamicMultiView=true 时 selectors.singleViewButton 不能为空");
+    }
+  }
   for (const key of [
     "loginTimeoutMs",
     "uploadTimeoutMs",
@@ -117,8 +137,8 @@ export async function loadConfig(configArgument = "config.json") {
     positiveNumber(config, key, ["submissionDelayMs", "uploadSettleDelayMs", "stageSettleDelayMs"].includes(key));
   }
 
-  if (config.textureResolution !== "8K") {
-    throw new Error("当前全流程自动化只支持 textureResolution=8K");
+  if (!["2K", "4K", "8K"].includes(config.textureResolution)) {
+    throw new Error("配置 textureResolution 只能是 2K、4K 或 8K");
   }
 
   if (!config.selectors.multiViewButton || !config.selectors.imageInputs) {
@@ -128,6 +148,13 @@ export async function loadConfig(configArgument = "config.json") {
     new URL(config.studioUrl);
   } catch {
     throw new Error(`studioUrl 不是有效网址：${config.studioUrl}`);
+  }
+  if (config.cdpEndpoint) {
+    try {
+      new URL(config.cdpEndpoint);
+    } catch {
+      throw new Error(`cdpEndpoint 不是有效网址：${config.cdpEndpoint}`);
+    }
   }
 
   return {

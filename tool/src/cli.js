@@ -128,13 +128,13 @@ async function waitForEnter(message) {
 }
 
 async function withBrowser(config, action) {
-  const context = await launchPersistentBrowser(config);
+  const session = await launchPersistentBrowser(config);
   try {
-    const page = await studioPage(context, config.studioUrl);
+    const page = await studioPage(session.context, config.studioUrl);
     const tripo = new TripoStudioPage(page, config);
     await action(tripo);
   } finally {
-    await context.close();
+    await session.close();
   }
 }
 
@@ -265,7 +265,8 @@ async function commandPipeline(config, result, state, options) {
     return;
   }
 
-  console.log(`本次准备跑通 ${assets.length} 个 HD → 智能拓扑 → 8K 纹理任务。`);
+  const topologyLabel = config.topologyMode === "quad" ? "四边面" : "三角面";
+  console.log(`本次准备跑通 ${assets.length} 个 HD → 智能${topologyLabel}拓扑 → ${config.textureResolution} 纹理任务。`);
   await withBrowser(config, async (tripo) => {
     await tripo.waitForLogin();
 
@@ -291,7 +292,7 @@ async function commandPipeline(config, result, state, options) {
         await markPipelineUncertain(tripo, state, asset, "retopology-prepare", error);
       }
       await runPipelineStage(tripo, state, asset, "retopology", () => tripo.clickRetopology(), () => tripo.waitForRetopology());
-      console.log(`  ✓ Smart Low Poly v2 完成（目标 ${config.targetFaces} 面）`);
+      console.log(`  ✓ Smart Low Poly v2 ${topologyLabel}完成（目标 ${config.targetFaces} 面）`);
 
       try {
         await tripo.openTexture();
@@ -309,7 +310,7 @@ async function commandPipeline(config, result, state, options) {
         workspaceUrl: tripo.currentUrl(),
         screenshot,
       });
-      console.log(`  ✓ 8K 纹理完成；截图：${screenshot}`);
+      console.log(`  ✓ ${config.textureResolution} 纹理完成；截图：${screenshot}`);
 
       if (config.submissionDelayMs > 0 && index < assets.length - 1) {
         await new Promise((resolve) => setTimeout(resolve, config.submissionDelayMs));

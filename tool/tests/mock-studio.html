@@ -15,15 +15,18 @@
     <button id="hd-mode" type="button" aria-pressed="false">HD Model</button>
     <button id="retopo-nav" type="button" hidden>Retopo</button>
     <section id="retopo-panel" hidden>
-      <button id="triangle" type="button">Triangle</button>
+      <button id="quad" type="button" aria-pressed="true" data-state="on">Quad</button>
+      <button id="triangle" type="button" aria-pressed="false" data-state="off">Triangle</button>
       <button id="smart" type="button" role="switch" aria-checked="false">Smart Low Poly v2</button>
       <input id="polygon-count" type="number" value="5000">
       <button id="retopology" type="button">Retopology 35</button>
     </section>
-    <button id="texture-nav" type="button" hidden>Texture</button>
+    <button id="texture-nav" type="button">Texture</button>
     <section id="texture-panel" hidden>
-      <button id="texture-8k" type="button">8K</button>
-      <button id="texture" type="button">Generate Texture 30</button>
+      <button id="texture-2k" type="button" aria-pressed="false" data-state="off">2K</button>
+      <button id="texture-4k" type="button" aria-pressed="false" data-state="off">4K</button>
+      <button id="texture-8k" type="button" aria-pressed="true" data-state="on">8K</button>
+      <button id="texture" type="button" disabled>Generate Texture 30</button>
     </section>
     <button id="export" type="button" hidden>Export</button>
 
@@ -73,20 +76,43 @@
 
       document.querySelector("#hd-mode").addEventListener("click", (event) => event.currentTarget.setAttribute("aria-pressed", "true"));
       document.querySelector("#retopo-nav").addEventListener("click", () => document.querySelector("#retopo-panel").hidden = false);
+      for (const topology of ["quad", "triangle"]) {
+        document.querySelector(`#${topology}`).addEventListener("click", (event) => {
+          for (const option of [document.querySelector("#quad"), document.querySelector("#triangle")]) {
+            option.setAttribute("aria-pressed", "false");
+            option.dataset.state = "off";
+          }
+          event.currentTarget.setAttribute("aria-pressed", "true");
+          event.currentTarget.dataset.state = "on";
+        });
+      }
       document.querySelector("#smart").addEventListener("click", (event) => event.currentTarget.setAttribute("aria-checked", "true"));
       document.querySelector("#retopology").addEventListener("click", (event) => {
         const button = event.currentTarget;
         button.disabled = true;
         processing.hidden = false;
-        processing.textContent = "Retopologizing";
+        processing.textContent = "重拓扑中";
         setTimeout(() => {
           processing.hidden = true;
           button.disabled = false;
+          document.querySelector("#texture").disabled = false;
           document.querySelector("#texture-nav").hidden = false;
-        }, 150);
+        }, 1250);
       });
       document.querySelector("#texture-nav").addEventListener("click", () => document.querySelector("#texture-panel").hidden = false);
-      document.querySelector("#texture-8k").addEventListener("click", (event) => event.currentTarget.dataset.selected = "true");
+      for (const resolution of ["2k", "4k", "8k"]) {
+        document.querySelector(`#texture-${resolution}`).addEventListener("click", (event) => {
+          for (const option of document.querySelectorAll('[id^="texture-"]')) {
+            if (!/texture-(2k|4k|8k)/.test(option.id)) continue;
+            option.setAttribute("aria-pressed", "false");
+            option.dataset.state = "off";
+            delete option.dataset.selected;
+          }
+          event.currentTarget.setAttribute("aria-pressed", "true");
+          event.currentTarget.dataset.state = "on";
+          event.currentTarget.dataset.selected = "true";
+        });
+      }
       document.querySelector("#texture").addEventListener("click", (event) => {
         const button = event.currentTarget;
         button.disabled = true;

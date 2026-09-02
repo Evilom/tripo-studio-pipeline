@@ -5,6 +5,8 @@
   "stateFile": ".runtime/state.json",
   "artifactDir": ".runtime/artifacts",
   "browserChannel": "msedge",
+  "cdpEndpoint": "",
+  "dynamicMultiView": true,
   "headless": false,
   "loginTimeoutMs": 600000,
   "uploadTimeoutMs": 120000,
@@ -13,8 +15,9 @@
   "uploadSettleDelayMs": 5000,
   "stageTimeoutMs": 1200000,
   "stageSettleDelayMs": 5000,
-  "targetFaces": 10000,
-  "textureResolution": "8K",
+  "topologyMode": "quad",
+  "targetFaces": 2000,
+  "textureResolution": "2K",
   "maxImageBytes": 20971520,
   "views": [
     {
@@ -26,25 +29,27 @@
       "fileNames": ["left.png", "left.jpg", "left.jpeg", "left.webp", "左侧.png", "左侧.jpg"]
     },
     {
-      "slot": "right",
-      "fileNames": ["right.png", "right.jpg", "right.jpeg", "right.webp", "右侧.png", "右侧.jpg"]
+      "slot": "back",
+      "fileNames": ["back.png", "back.jpg", "back.jpeg", "back.webp", "后侧.png", "后侧.jpg", "背面.png", "背面.jpg"]
     }
   ],
   "selectors": {
+    "singleViewButton": "button:has(> [class~=\"i-tripo:add-image\"])",
     "multiViewButton": "button:has(> [class~=\"i-tripo:multi-view\"])",
     "imageInputs": "input[type=\"file\"][accept*=\"image\"]",
     "generateButton": "",
     "submissionConfirmation": "",
     "submissionError": "",
-    "hdModeButton": "text=\"HD Model\"",
-    "retopologyNav": "text=\"Retopo\"",
-    "triangleButton": "text=\"Triangle\"",
+    "hdModeButton": "text=\"高精度模型\"",
+    "retopologyNav": "text=\"重拓扑\"",
+    "quadButton": "text=\"四边面\"",
+    "triangleButton": "text=\"三角面\"",
     "smartLowPolySwitch": "button[role=\"switch\"]",
-    "polygonCountInput": "input[type=\"number\"]",
-    "retopologyButton": "button:has-text(\"Retopology\")",
-    "textureNav": "text=\"Texture\"",
-    "texture8kButton": "text=\"8K\"",
-    "textureButton": "button:has-text(\"Generate Texture\")",
-    "exportButton": "button:has-text(\"Export\")"
+    "polygonCountInput": "input[type=\"text\"]",
+    "retopologyButton": "button:has-text(\"重拓扑\")",
+    "textureNav": "text=\"纹理生成\"",
+    "textureResolutionButton": "",
+    "textureButton": "button:has-text(\"生成纹理\")",
+    "exportButton": "button:has-text(\"导出\")"
   }
 }

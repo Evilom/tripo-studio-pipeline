@@ -1,6 +1,6 @@
 ---
 name: tripo-studio-pipeline
-description: Run and monitor Tripo Studio multi-view jobs through the visible web UI, including HD model generation, Smart Low Poly retopology, and 8K texture generation. Use for scanning, previewing, submitting, checking, or safely resolving the local Tripo batch queue; not for Tripo API integration or reverse-engineering private requests.
+description: Run and monitor Tripo Studio multi-view jobs through the visible web UI, including HD model generation, Smart Low Poly retopology, and configurable texture generation. Use for scanning, previewing, submitting, checking, or safely resolving the local Tripo batch queue; not for Tripo API integration or reverse-engineering private requests.
 ---
 
 # Tripo Studio Pipeline
@@ -11,9 +11,9 @@ Use the existing queue tool rather than recreating browser logic. Invoke it thro
 
 - Inspect only: run `scan` to validate view files and `status` to read checkpoints.
 - Verify one asset without spending credits: run `preview --asset <id>`. It uploads the images but does not click Generate.
-- Run the full paid workflow: run `pipeline`, optionally with `--asset <id>` or `--limit <n>`. The configured workflow is multi-view HD → Smart Low Poly v2, triangle topology, target 10,000 faces → 8K texture.
+- Run the full paid workflow: run `pipeline`, optionally with `--asset <id>` or `--limit <n>`. The web-oriented default is multi-view HD → Smart Low Poly v2, quad topology, target 2,000 faces → 2K texture.
 - Use `run` only when the user wants HD generation without the later retopology and texture stages.
-- If login is missing, run `login` and let the user complete login in the dedicated Chrome window. Never copy or extract cookies, passwords, or Chrome profile data.
+- If login is missing, run `login` and let the user complete login in the dedicated Chrome window. When a Playwright-launched browser repeatedly triggers human verification, use the documented `cdpEndpoint` flow to connect to a normally launched visible Chrome. Never copy or extract cookies, passwords, or Chrome profile data.
 
 Example from PowerShell:
 
@@ -37,6 +37,6 @@ Do not bypass CAPTCHA, concurrency limits, login checks, or credit checks. Do no
 
 ## Input contract
 
-Each asset is one subdirectory under the tool's `inputs` directory. The default mapping requires `front`, `left`, and `right` images. Run `scan` before any paid operation; if any asset is invalid, fix or exclude it rather than guessing its view direction.
+Each asset is one subdirectory under the tool's `inputs` directory. The current dynamic multi-view mapping requires `front`, `left`, and `back` images. Run `scan` before any paid operation; if any asset is invalid, fix or exclude it rather than guessing its view direction.
 
 After a run, report the completed/uncertain counts, final checkpoint status, artifact screenshot path when present, and whether the queue can be safely resumed.

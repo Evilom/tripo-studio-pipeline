@@ -7,6 +7,9 @@ import test from "node:test";
 import { chromium } from "playwright-core";
 import { TripoStudioPage } from "../src/tripo-page.js";
 
+const browserChannel = process.env.TRIPO_TEST_BROWSER_CHANNEL
+  ?? (process.platform === "darwin" ? "chrome" : "msedge");
+
 test("TripoStudioPage 切换多视图、按槽位上传并确认提交", async (t) => {
   const root = await mkdtemp(path.join(os.tmpdir(), "tripo-browser-"));
   t.after(() => rm(root, { recursive: true, force: true }));
@@ -37,7 +40,7 @@ test("TripoStudioPage 切换多视图、按槽位上传并确认提交", async (
     },
   };
 
-  const browser = await chromium.launch({ channel: "msedge", headless: true });
+  const browser = await chromium.launch({ channel: browserChannel, headless: true });
   t.after(() => browser.close());
   const page = await browser.newPage();
   await page.goto(mockUrl);
@@ -56,7 +59,7 @@ test("TripoStudioPage 切换多视图、按槽位上传并确认提交", async (
   await assert.doesNotReject(page.getByText(/Submitted front\.png,right\.png,back\.png/).waitFor());
 });
 
-test("TripoStudioPage 跑通 HD、智能拓扑和 8K 纹理", async (t) => {
+test("TripoStudioPage 跑通 HD、智能拓扑和 2K 网页纹理", async (t) => {
   const root = await mkdtemp(path.join(os.tmpdir(), "tripo-pipeline-"));
   t.after(() => rm(root, { recursive: true, force: true }));
   const files = [];
@@ -75,9 +78,10 @@ test("TripoStudioPage 跑通 HD、智能拓扑和 8K 纹理", async (t) => {
     submissionConfirmTimeoutMs: 5000,
     uploadSettleDelayMs: 0,
     stageTimeoutMs: 5000,
-    stageSettleDelayMs: 200,
-    targetFaces: 10000,
-    textureResolution: "8K",
+    stageSettleDelayMs: 20,
+    topologyMode: "quad",
+    targetFaces: 2000,
+    textureResolution: "2K",
     views: files.map(({ slot }) => ({ slot })),
     selectors: {
       multiViewButton: "#multi-view",
@@ -87,18 +91,18 @@ test("TripoStudioPage 跑通 HD、智能拓扑和 8K 纹理", async (t) => {
       submissionError: "",
       hdModeButton: "#hd-mode",
       retopologyNav: "#retopo-nav",
+      quadButton: "#quad",
       triangleButton: "#triangle",
       smartLowPolySwitch: "#smart",
       polygonCountInput: "#polygon-count",
       retopologyButton: "#retopology",
       textureNav: "#texture-nav",
-      texture8kButton: "#texture-8k",
       textureButton: "#texture",
       exportButton: "#export",
     },
   };
 
-  const browser = await chromium.launch({ channel: "msedge", headless: true });
+  const browser = await chromium.launch({ channel: browserChannel, headless: true });
   t.after(() => browser.close());
   const page = await browser.newPage();
   await page.goto(mockUrl);
@@ -113,14 +117,82 @@ test("TripoStudioPage 跑通 HD、智能拓扑和 8K 纹理", async (t) => {
   await tripo.openRetopology();
   await tripo.configureRetopology();
   assert.equal(await page.locator("#smart").getAttribute("aria-checked"), "true");
-  assert.equal(await page.locator("#polygon-count").inputValue(), "10000");
+  assert.equal(await page.locator("#quad").getAttribute("aria-pressed"), "true");
+  assert.equal(await page.locator("#polygon-count").inputValue(), "2000");
   await tripo.clickRetopology();
+  const retopologyStartedAt = Date.now();
   await tripo.waitForRetopology();
+  assert.ok(Date.now() - retopologyStartedAt >= 1100, "应等待中文“重拓扑中”状态真正结束");
 
   await tripo.openTexture();
   await tripo.configureTexture();
   await tripo.clickTexture();
   await tripo.waitForTexture();
-  assert.equal(await page.locator("#texture-8k").getAttribute("data-selected"), "true");
+  assert.equal(await page.locator("#texture-2k").getAttribute("data-selected"), "true");
   assert.equal(await page.locator("#export").isVisible(), true);
+});
+
+test("TripoStudioPage 适配上传后槽位消失的新版三视图", async (t) => {
+  const root = await mkdtemp(path.join(os.tmpdir(), "tripo-dynamic-"));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  const files = [];
+  for (const slot of ["front", "left", "back"]) {
+    const filePath = path.join(root, `${slot}.png`);
+    await writeFile(filePath, slot);
+    files.push({ slot, path: filePath, name: `${slot}.png` });
+  }
+
+  const mockUrl = pathToFileURL(path.resolve("tests/mock-studio-dynamic.html")).href;
+  const config = {
+    studioUrl: mockUrl,
+    dynamicMultiView: true,
+    headless: true,
+    loginTimeoutMs: 1000,
+    uploadTimeoutMs: 5000,
+    submissionConfirmTimeoutMs: 5000,
+    uploadSettleDelayMs: 0,
+    views: files.map(({ slot }) => ({ slot })),
+    selectors: {
+      singleViewButton: "#single-view",
+      multiViewButton: "#multi-view",
+      imageInputs: 'input[type="file"][accept*="image"]',
+      generateButton: "#generate",
+      submissionConfirmation: "[data-testid=submission]",
+      submissionError: "",
+    },
+  };
+
+  const browser = await chromium.launch({ channel: browserChannel, headless: true });
+  t.after(() => browser.close());
+  const page = await browser.newPage();
+  await page.goto(mockUrl);
+  const tripo = new TripoStudioPage(page, config, () => {});
+
+  await tripo.prepareAsset({ id: "controller", files });
+  assert.equal(await page.locator("#generate").isEnabled(), true);
+  const confirmation = await tripo.clickGenerate();
+  assert.equal(confirmation, "confirmation-selector");
+  await assert.doesNotReject(page.getByText(/front:front\.png,left:left\.png,back:back\.png/).waitFor());
+});
+
+test("TripoStudioPage 从裸任务 ID 路由恢复完整 slug 路由", async () => {
+  const taskId = "61034e7b-1111-4111-8111-123456789abc";
+  const incompletePath = `/workspace/retopology/${taskId}`;
+  const canonicalPath = `/workspace/retopology/handheld-console-${taskId}`;
+  let navigatedTo = "";
+  const page = {
+    waitForTimeout: async () => {},
+    url: () => `https://studio.tripo3d.ai${incompletePath}`,
+    locator: () => ({
+      evaluateAll: async () => [incompletePath, canonicalPath],
+    }),
+    goto: async (url) => {
+      navigatedTo = url;
+    },
+  };
+  const tripo = new TripoStudioPage(page, { uploadTimeoutMs: 1000 }, () => {});
+
+  await tripo.ensureCanonicalTaskRoute("retopology", taskId);
+
+  assert.equal(navigatedTo, `https://studio.tripo3d.ai${canonicalPath}`);
 });

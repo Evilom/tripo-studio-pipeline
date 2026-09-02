@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <title>Mock Dynamic Tripo Studio</title>
+  </head>
+  <body>
+    <button id="single-view" type="button"><span class="i-tripo:add-image"></span></button>
+    <button id="multi-view" type="button"><span class="i-tripo:multi-view"></span></button>
+    <main id="workspace"></main>
+    <button id="generate" type="button" disabled>生成 65</button>
+    <p data-testid="submission" hidden>任务已提交</p>
+    <script>
+      const uploaded = [];
+      const workspace = document.querySelector("#workspace");
+      const generate = document.querySelector("#generate");
+
+      function renderInput(slot, nextSlot = "") {
+        const input = document.createElement("input");
+        input.type = "file";
+        input.accept = "image/png,image/webp,image/jpeg";
+        input.dataset.slot = slot;
+        input.addEventListener("change", () => {
+          uploaded.push(`${slot}:${input.files[0]?.name ?? ""}`);
+          input.remove();
+          if (nextSlot) renderInput(nextSlot);
+          generate.disabled = uploaded.length !== 3;
+        });
+        workspace.append(input);
+      }
+
+      document.querySelector("#single-view").addEventListener("click", () => {
+        workspace.replaceChildren();
+        renderInput("front");
+      });
+      document.querySelector("#multi-view").addEventListener("click", () => {
+        workspace.replaceChildren();
+        renderInput("left", "back");
+      });
+      generate.addEventListener("click", () => {
+        const submission = document.querySelector("[data-testid=submission]");
+        submission.hidden = false;
+        submission.textContent = `任务已提交 ${uploaded.join(",")}`;
+      });
+    </script>
+  </body>
+</html>
