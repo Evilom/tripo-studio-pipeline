@@ -1,42 +1,45 @@
 ---
 name: tripo-studio-pipeline
-description: Run and monitor Tripo Studio multi-view jobs through the visible web UI, including HD model generation, Smart Low Poly retopology, and configurable texture generation. Use for scanning, previewing, submitting, checking, or safely resolving the local Tripo batch queue; not for Tripo API integration or reverse-engineering private requests.
+description: Automate Tripo Studio character production from verified source references and front/left/back images to independent HD head and A-Pose body assets, retopology, textures, verified GLB/OBJ delivery, and checkpoint recovery. Also use for the existing Studio batch queue. Excludes Tripo API integration and private-request reverse engineering.
 ---
 
 # Tripo Studio Pipeline
 
-Use the existing queue tool rather than recreating browser logic. Invoke it through [scripts/invoke.ps1](scripts/invoke.ps1), which locates the maintained tool and preserves its local Chrome profile, artifacts, and state.
+通过可见 Studio 网页执行生产，保留本地源参考、生成图、原 HD、阶段记录和下载原件。用户最新规格优先；下面的人物参数是一套经过实际生产使用的配置，不是所有物件的通用默认值。
 
-## Choose the operation
+## 选择入口
 
-- Inspect only: run `scan` to validate view files and `status` to read checkpoints.
-- Verify one asset without spending credits: run `preview --asset <id>`. It uploads the images but does not click Generate.
-- Run the full paid workflow: run `pipeline`, optionally with `--asset <id>` or `--limit <n>`. The web-oriented default is multi-view HD → Smart Low Poly v2, quad topology, target 2,000 faces → 2K texture.
-- Use `run` only when the user wants HD generation without the later retopology and texture stages.
-- If login is missing, run `login` and let the user complete login in the dedicated Chrome window. When a Playwright-launched browser repeatedly triggers human verification, use the documented `cdpEndpoint` flow to connect to a normally launched visible Chrome. Never copy or extract cookies, passwords, or Chrome profile data.
+- **人物生产、批量头身资产**：先读 [人物工作流](references/character-workflow.md)。需要的是参考、生成、收取和验收的完整闭环。
+- **断线、超时、已接受任务或导出故障**：先读 [恢复与浏览器协议](references/recovery.md)，定位原项目最后接受的阶段后继续。
+- **仅扫描、预览或使用现有通用队列**：读 [通用队列命令](references/queue.md)。保留原有 `scan/preview/run/pipeline/status/resolve` 契约。
+- **检查双资产交付文件**：读 [交付记录与校验](references/delivery.md)，运行 [verify_character_delivery.py](scripts/verify_character_delivery.py)。脚本只读文件，不打开浏览器、不扣费、不修改验收状态。
 
-Example from PowerShell:
+用户只要求头部、全身或单个文件时，只处理该范围；13 项校验器用于完整双资产清单，不为满足它而扩展单资产任务。
 
-```powershell
-& "$env:USERPROFILE\.codex\skills\tripo-studio-pipeline\scripts\invoke.ps1" scan
-& "$env:USERPROFILE\.codex\skills\tripo-studio-pipeline\scripts\invoke.ps1" pipeline --limit 1
-```
+本仓库的 `tool/` 通用 CLI 默认仍为 2,000 面、2K，运行到纹理阶段；它没有人物双资产、原 HD 收取和双格式导出的完整调度器。人物流程由 agent 按本 skill 协调项目适配脚本或当前可用的浏览器工具，不能直接把通用 `pipeline` 当成人物全流程，也不能靠 `resolve` 补做未完成阶段。
 
-## Preserve the credit boundary
+## 恢复时先读真实状态
 
-`pipeline` and `run` spend the user's Tripo Studio credits. Run them only when the current request authorizes real submissions. State the selected asset count before starting; do not infer permission to add assets or repeat failed jobs. Studio pricing can change, so treat previously observed costs as historical rather than guaranteed.
+1. 在用户指定项目读取 `WORKFLOW.md`、`GOAL.md`、`ASSET_SPEC.md`（存在时），随后读取 `roster.json`、`deliveries/README.md` 和 `PROGRESS.md`。没有既定结构的新项目，按参考文档建立等价记录。
+2. 核对当前角色的头身文件映射、OS 进程、日志、checkpoint/history、已有项目 ID 和真实文件。锁文件或工具句柄单独都不能证明任务还在运行。
+3. 优先收齐已生成模型；从最后接受的阶段恢复，不从旧文档的角色、轮次或名单总数重新开始。不要把历史快照写成 skill 的固定起点。
 
-The queue writes a checkpoint before every paid click. If it reports `uncertain`, `submitting`, or `processing` and stops, inspect the Studio asset list and the recorded screenshot before changing state. Never resolve as `retry` unless the user or visible Studio state confirms that no task was accepted. Use:
+## 人物生产的必要约束
 
-```powershell
-& "$env:USERPROFILE\.codex\skills\tripo-studio-pipeline\scripts\invoke.ps1" resolve --asset <id> --as completed --confirm
-& "$env:USERPROFILE\.codex\skills\tripo-studio-pipeline\scripts\invoke.ps1" resolve --asset <id> --as retry --confirm
-```
+- 锁定同一角色、扮演者、原作、时期和标志服装；视频素材优先 B 站原片，保存来源、分 P、真实秒数和实际帧。缺失角度注明推断，不混用其他演员或 AI 换脸素材作为原片证据。
+- 先建立独立高清头颈，再以同一头像和服装参考建立全身。全身双臂向两侧约 45°、手掌离衣、手指和双腿分开；正侧背旋转相机，保持同姿态。宽袍遮挡不能证明内部腿部存在或可绑定。
+- 三视图按 `front / left / back` 显式映射，右槽留空。逐槽等待图片解码，实际查看网页缩略图与 HD 模式；预览和付费提交分两次工具调用，检查输入签名和真实尺寸，不能随手选择第一个同站标签页。
+- 每人一轮，头身分别保留 HD，首次普通 Quad 头部目标 30,000、全身 10,000，显式关闭 Smart Low Poly；颜色纹理目标 4K。目标面数和分辨率不是实际结果，清单填写原生 OBJ 面型及每张贴图的真实尺寸。
+- 已接受的 HD、拓扑和纹理只能续接与导出。超时、断线、目标重启、观察失败和小瑕疵均不构成重复付费理由。明显错误单列待处理；小瑕疵留档，保留 HD 供后续 Wrap，不反复焊接或重画。
+- 同一浏览器的所有 UI 操作串行，包含取帧和下载。项目已有 `tools/run_tripo_ui.mjs` 时统一经过该锁入口；下载期间不另建 CDP 连接。模型服务计算期间可以做本地渲染或下一角色的独立参考准备。
+- 实际查看头身 HD 与拓扑的正、侧、背及脸部近景后才能标记视觉已看。文件检查通过不等于长相、姿势、Wrap、绑定或动画验收通过。
 
-Do not bypass CAPTCHA, concurrency limits, login checks, or credit checks. Do not replay or imitate Tripo's internal network requests; this workflow deliberately uses the visible Studio interface.
+## 提交与停止条件
 
-## Input contract
+沿用会话已有授权，在授权角色和轮次内正常推进，无需逐步重复确认。仅整理流程、免费预览或检查文件不授权付费生成。每次付费点击前落盘阶段记录，接受后立即保存原项目 ID/URL；不确定时保留证据并核对原任务，不能自动重试。确认登录、额度或平台问题时记录具体阻碍，继续独立可做的工作。
 
-Each asset is one subdirectory under the tool's `inputs` directory. The current dynamic multi-view mapping requires `front`, `left`, and `back` images. Run `scan` before any paid operation; if any asset is invalid, fix or exclude it rather than guessing its view direction.
+使用正常登录的可见 Chrome/Edge，不导出凭据，不绕过验证码或平台限制，不调用或复刻 Tripo 私有请求。仓库只保存通用代码和脱敏示例，项目凭据、参考、模型、账户页面和运行记录留在原项目。
 
-After a run, report the completed/uncertain counts, final checkpoint status, artifact screenshot path when present, and whether the queue can be safely resumed.
+## 一人的完成与下一人
+
+确认头身 HD、纹理 GLB、原生 OBJ/MTL/实际贴图全部落盘，核对角色映射、大小、SHA256、容器完整性与视觉证据。同步角色 manifest、visual-review、README、roster 和 PROGRESS，然后推进下一人。报告文件齐备候选、待处理缺陷、最后接受阶段及下一步；只有用户要求的验收均有证据才报告最终完成。

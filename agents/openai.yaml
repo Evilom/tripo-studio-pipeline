@@ -1,6 +1,6 @@
 interface:
-  display_name: "Tripo Studio 全流程"
-  short_description: "安全批量执行 Tripo 三视图 HD、智能拓扑与 8K 纹理工作流"
-  default_prompt: "Use $tripo-studio-pipeline to validate my multi-view assets and safely run the Tripo Studio HD, retopology, and texture workflow."
+  display_name: "Tripo 人物双资产生产"
+  short_description: "从原片三视图到独立头部与 A-Pose 全身，续接生成并核验交付"
+  default_prompt: "使用 $tripo-studio-pipeline 从当前项目真实断点继续人物头部与同服装 A-Pose 全身生产，先收齐已接受任务，检查 GLB/OBJ 与视觉证据，再推进下一位。"
 policy:
   allow_implicit_invocation: true
