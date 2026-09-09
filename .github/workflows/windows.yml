@@ -1,0 +1,40 @@
+name: Windows compatibility
+on: [push, pull_request, workflow_dispatch]
+permissions:
+  contents: read
+jobs:
+  windows:
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        shell: [powershell, pwsh]
+        node: [20, 22]
+    defaults:
+      run:
+        shell: ${{ matrix.shell }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+          cache-dependency-path: tool/package-lock.json
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+      - name: PowerShell startup and argument forwarding
+        run: |
+          # First run creates config; second run installs with npm.cmd.
+          & ./tool/start.ps1 status
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          & ./scripts/invoke.ps1 help
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          & ./scripts/invoke.ps1 scan --limit 1
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          & ./scripts/invoke.ps1 status
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Node tests including real Edge against local mock Studio
+        working-directory: tool
+        run: npm.cmd test
+      - name: Delivery validator tests
+        run: python -m unittest discover -s tests -v

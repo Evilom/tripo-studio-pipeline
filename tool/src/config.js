@@ -95,7 +95,7 @@ export async function loadConfig(configArgument = "config.json") {
 
   let parsed;
   try {
-    parsed = JSON.parse(await readFile(configPath, "utf8"));
+    parsed = JSON.parse((await readFile(configPath, "utf8")).replace(/^\uFEFF/, ""));
   } catch (error) {
     throw new Error(`配置文件不是有效 JSON：${configPath}\n${error.message}`);
   }

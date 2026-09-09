@@ -19,7 +19,7 @@ else {
 
 $startScript = Join-Path $toolRoot "start.ps1"
 if (-not (Test-Path -LiteralPath $startScript -PathType Leaf)) {
-    throw "找不到 Tripo 队列工具：$startScript。请设置 TRIPO_STUDIO_QUEUE_ROOT 指向工具目录。"
+    throw "Queue tool missing: $startScript. Set TRIPO_STUDIO_QUEUE_ROOT to the tool directory."
 }
 
 & $startScript $Command @RemainingArgs

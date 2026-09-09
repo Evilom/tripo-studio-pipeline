@@ -7,6 +7,7 @@
 它使用已登录账号的 **Tripo Studio 积分**。无需配置 Tripo API Key；脚本通过浏览器上传图片、选择参数和点击按钮，不调用或复刻 Tripo 私有接口。
 
 - [仓库组成与自动化范围](#overview)
+- [Windows 完整安装与使用指南](references/windows.md)
 - [安装依赖](#install)
 - [设置配置文件](#config)
 - [连接浏览器并登录 Tripo](#browser)
@@ -52,6 +53,8 @@ flowchart LR
 
 ## 1. 安装依赖
 
+**Windows 用户请优先按 [Windows 指南](references/windows.md) 操作**：包含 PowerShell 5.1/7、Edge/Chrome、UTF-8 配置、路径、登录、免费预览、启动器、Skill 安装及断点恢复。无需 WSL；默认由工具自动启动浏览器。
+
 | 依赖 | 何时需要 |
 |---|---|
 | Git | 克隆与更新仓库 |
@@ -83,7 +86,7 @@ node src/cli.js help
 New-Item -ItemType Directory -Force "$env:USERPROFILE\projects" | Out-Null
 git clone https://github.com/Evilom/tripo-studio-pipeline.git "$env:USERPROFILE\projects\tripo-studio-pipeline"
 Set-Location "$env:USERPROFILE\projects\tripo-studio-pipeline\tool"
-npm ci
+npm.cmd ci
 if (!(Test-Path config.json)) { Copy-Item config.example.json config.json }
 New-Item -ItemType Directory -Force inputs | Out-Null
 node --version

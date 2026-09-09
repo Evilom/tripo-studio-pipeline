@@ -9,6 +9,8 @@ description: Automate Tripo Studio character production from verified source ref
 
 ## 选择入口
 
+在 Windows 设置或运行时先读 [Windows 指南](references/windows.md)，使用原生 PowerShell/Node 路径与命令；不要照搬 macOS 绝对路径、shell 续行或浏览器 profile。
+
 - **人物生产、批量头身资产**：先读 [人物工作流](references/character-workflow.md)。需要的是参考、生成、收取和验收的完整闭环。
 - **断线、超时、已接受任务或导出故障**：先读 [恢复与浏览器协议](references/recovery.md)，定位原项目最后接受的阶段后继续。
 - **仅扫描、预览或使用现有通用队列**：读 [通用队列命令](references/queue.md)。保留原有 `scan/preview/run/pipeline/status/resolve` 契约。
