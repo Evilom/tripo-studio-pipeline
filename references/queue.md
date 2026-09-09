@@ -27,7 +27,7 @@ node src/cli.js preview --config /path/to/config.json --asset example_asset
 | `scan` | 检查视图文件和签名，不能证明长相或方向视觉正确 |
 | `status` | 读取本地 checkpoint，不保证平台实时状态 |
 | `preview --asset ID` | 上传并截图，不点生成，之后需要实际看图 |
-| `run --asset ID` | 有授权时首次付费 HD |
+| `run --asset ID` | 有授权时首次提交生成；沿用页面当前模型设置，不主动选择 HD |
 | `pipeline --asset ID` | 有授权时首次 HD→Smart Low Poly→纹理 |
 | `resolve` | 根据核对结果修改本地队列状态，不运行缺失阶段 |
 

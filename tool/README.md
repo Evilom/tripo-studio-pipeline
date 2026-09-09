@@ -1,5 +1,7 @@
 # Tripo Studio 多视图任务队列
 
+从零安装、完整配置、Chrome/Edge 连接、登录与首次运行，请从 [根目录 README](../README.md) 开始；该文档已将各系统命令与配置字段集中说明。下面保留通用工具的补充说明。
+
 本文介绍原有通用 CLI。人物的独立头部＋A-Pose 全身、30,000/10,000 普通 Quad、原 HD 保存和 GLB/OBJ 交付，见仓库 [SKILL.md](../SKILL.md) 与 [人物工作流](../references/character-workflow.md)。通用 `pipeline` 不实现这套完整调度，不要用其默认参数替代人物规格；在共享浏览器中操作时先遵守项目互斥与下载协议。
 
 这个本地工具通过 Tripo Studio 的可见网页界面，逐组执行多视图任务。它使用 Studio 会员积分，不调用 Tripo API，也不会读取、导出或复刻网页内部请求。
