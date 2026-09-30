@@ -1,0 +1,11 @@
+<!doctype html><html lang="zh-CN"><meta charset="utf-8"><title>Tripo 助手</title>
+<style>body{width:290px;font:14px/1.6 system-ui;padding:14px;color:#222}button{padding:10px 14px;border:0;border-radius:8px;background:#6753b7;color:white;cursor:pointer}#status{white-space:pre-wrap}</style>
+<h3>Tripo 工作流助手</h3><p>先打开正常登录的 Tripo Studio 标签页，再点击下面的按钮。</p>
+<button id="open">在当前 Tripo 页打开助手</button><p id="status"></p>
+<hr><h4>保存当前 Tripo 导出文件</h4>
+<p>仅在原生导出跳到 Tripo CDN 后使用。通过 Chrome 下载 API 保存文件，保留当前标签页；不会关闭保护或自动放行危险文件。</p>
+<label>原模型 UUID <input id="modelid" placeholder="原 Tripo 模型页面编号"></label>
+<label>文件名 <input id="filename" placeholder="example-walk.glb"></label>
+<label><input id="confirmed" type="checkbox">我已核对当前链接来自本轮模型导出</label>
+<button id="download">保存一次</button><button id="read-downloads">读下载记录</button>
+<pre id="download-status"></pre><script src="popup.js"></script></html>

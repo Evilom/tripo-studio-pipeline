@@ -1,0 +1,9 @@
+{
+  "schema": 1,
+  "id": "replace-with-unique-task-id",
+  "name": "示例模型任务",
+  "initialBalance": 100,
+  "maximumSpend": 20,
+  "variants": ["方案 A", "方案 B"],
+  "authorization": "请替换为实际获准的额度与授权来源；示例数据不代表获准支出。"
+}

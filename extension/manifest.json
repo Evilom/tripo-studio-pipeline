@@ -1,0 +1,36 @@
+{
+  "manifest_version": 3,
+  "name": "Tripo 工作流助手",
+  "version": "0.5.1",
+  "description": "在当前 Tripo 标签页选择模型素材、执行公开按钮并记录任务预算与提交状态。",
+  "minimum_chrome_version": "114",
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "storage",
+    "downloads"
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "打开 Tripo 助手"
+  },
+  "host_permissions": [
+    "https://studio.tripo3d.ai/*",
+    "https://tripo-data.rg1.data.tripo3d.com/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "https://studio.tripo3d.ai/workspace/*"
+      ],
+      "js": [
+        "studio-context.js",
+        "export-ui.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ],
+  "background": {
+    "service_worker": "background.js"
+  }
+}

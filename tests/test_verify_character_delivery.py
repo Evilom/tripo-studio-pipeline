@@ -45,6 +45,14 @@ def obj_zip(missing_texture=False, missing_material=False):
 
 
 class DeliveryChecks(unittest.TestCase):
+    def create_symlink(self, link, target):
+        try:
+            link.symlink_to(target)
+        except OSError as error:
+            if getattr(error, 'winerror', None) == 1314:
+                self.skipTest('Windows has not granted permission to create symlinks')
+            raise
+
     def setUp(self):
         self.directory = tempfile.TemporaryDirectory()
         self.addCleanup(self.directory.cleanup)
@@ -171,7 +179,7 @@ class DeliveryChecks(unittest.TestCase):
         target = self.root / self.names[1]
         body = self.root / self.names[7]
         body.unlink()
-        body.symlink_to(target)
+        self.create_symlink(body, target)
         self.assertRejected("resolve to the same file")
 
     def test_symlink_cannot_leave_project(self):
@@ -180,7 +188,7 @@ class DeliveryChecks(unittest.TestCase):
             target.write_bytes(b'{}')
             file = self.root / self.source
             file.unlink()
-            file.symlink_to(target)
+            self.create_symlink(file, target)
             self.assertRejected("Path leaves project")
 
     def test_texture_dimensions_are_observed_from_header(self):

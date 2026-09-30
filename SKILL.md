@@ -1,6 +1,6 @@
 ---
 name: tripo-studio-pipeline
-description: Automate Tripo Studio character production from verified source references and front/left/back images to independent HD head and A-Pose body assets, retopology, textures, verified GLB/OBJ delivery, and checkpoint recovery. Also use for the existing Studio batch queue. Excludes Tripo API integration and private-request reverse engineering.
+description: Operate Tripo Studio through visible browser UI with a versioned task bundle, shared credit budget, duplicate-submit protection, native export continuation, file checks, and recovery. Use when reusing the current logged-in Chrome with the extension, producing character or quadruped game assets, or running the existing Studio batch queue. Also covers independent HD head and A-Pose body workflows. Excludes Tripo API integration and private-request reverse engineering.
 ---
 
 # Tripo Studio Pipeline
@@ -9,12 +9,14 @@ description: Automate Tripo Studio character production from verified source ref
 
 ## 选择入口
 
-在 Windows 设置或运行时先读 [Windows 指南](references/windows.md)，使用原生 PowerShell/Node 路径与命令；不要照搬 macOS 绝对路径、shell 续行或浏览器 profile。
+先按用户指定的浏览器模式选择入口。用户要求复用当前 Chrome 时，不执行专用浏览器启动命令，也不创建新的 profile、无痕窗口或登录会话。另行使用 Windows CLI 时读 [Windows 指南](references/windows.md)，使用原生 PowerShell/Node 路径与命令。
 
+- **当前已登录 Chrome、模型生成和自动导出**：先读 [当前 Chrome 流程及验收边界](references/current-chrome.md)，再读 [扩展指南](extension/README.md)和 [任务契约](references/task-contract.md)。核对实际加载版本与当前 URL；使用环境提供且允许的浏览器工具操作同一标签页。
 - **人物生产、批量头身资产**：先读 [人物工作流](references/character-workflow.md)。需要的是参考、生成、收取和验收的完整闭环。
 - **断线、超时、已接受任务或导出故障**：先读 [恢复与浏览器协议](references/recovery.md)，定位原项目最后接受的阶段后继续。
 - **仅扫描、预览或使用现有通用队列**：读 [通用队列命令](references/queue.md)。保留原有 `scan/preview/run/pipeline/status/resolve` 契约。
 - **检查双资产交付文件**：读 [交付记录与校验](references/delivery.md)，运行 [verify_character_delivery.py](scripts/verify_character_delivery.py)。脚本只读文件，不打开浏览器、不扣费、不修改验收状态。
+- **检查导出骨骼与动作**：运行 [verify_glb_motion.py](scripts/verify_glb_motion.py)并按需要加 `--require-animation`。文件检查不能替代姿态、比例、变形、根运动和游戏导入验收。
 
 用户只要求头部、全身或单个文件时，只处理该范围；13 项校验器用于完整双资产清单，不为满足它而扩展单资产任务。
 
@@ -37,6 +39,10 @@ description: Automate Tripo Studio character production from verified source ref
 - 实际查看头身 HD 与拓扑的正、侧、背及脸部近景后才能标记视觉已看。文件检查通过不等于长相、姿势、Wrap、绑定或动画验收通过。
 
 ## 提交与停止条件
+
+任务 JSON 中写了额度不等于人类已授权。沿用会话授权及原共享账本；预算门禁只保护经过助手的提交，Agent 在网页直接操作时仍须记录意图、报价及实际余额变化。空输入价格、按钮暂未显示价格、保存操作没有价格均不能证明免费；不明确时先核实该操作的费用。通过更新页面或配置清空未知提交记录会破坏防重。
+
+四足使用四爪着地的中立基础姿态，不直接套用人物 A-Pose 参数。不同风格分别核对自己的参考，不能复用一套三视图冒充其他设定。平台文本动作在人形与 Other 四足上的能力分别检查，不能把人形成功写成四足成功。
 
 沿用会话已有授权，在授权角色和轮次内正常推进，无需逐步重复确认。仅整理流程、免费预览或检查文件不授权付费生成。每次付费点击前落盘阶段记录，接受后立即保存原项目 ID/URL；不确定时保留证据并核对原任务，不能自动重试。确认登录、额度或平台问题时记录具体阻碍，继续独立可做的工作。
 
