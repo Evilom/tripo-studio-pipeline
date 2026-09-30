@@ -1,12 +1,20 @@
 # Tripo Studio Pipeline
 
-用 **Playwright 自动操作 Tripo Studio 网页**，把一组组正面、左侧、背面图片提交给 Tripo，按顺序执行模型生成、重拓扑和纹理生成，并保存本地断点与操作截图。
+通过 **版本化 JSON 任务、AI Agent 和浏览器扩展**，在已登录的 Tripo Studio 中组织模型生成、后处理、下载与交付检查。任务定义素材、方案和共享预算；Agent 核对可见网页与结果；扩展保存付费意图、防止重复提交，并自动接续原生导出。
 
-仓库同时提供一个 **Codex Skill**：让 agent 按人物生产流程组织原片参考、独立高清头部和同服装 A-Pose 全身，续接已接受的任务，检查 GLB/OBJ 交付并维护进度。下面先介绍仓库实际包含什么，再给出从安装到首次运行的步骤。
+仓库包含 **当前 Chrome 扩展**、**Codex Skill** 和原有 **Playwright 三视图队列**。可处理人物、四足角色或物品；人物头身独立生产是一个可选流程。Agent 必须有环境提供且允许的浏览器操作能力，安装本仓库不会自动获得该能力。
 
 它使用已登录账号的 **Tripo Studio 积分**。无需配置 Tripo API Key；脚本通过浏览器上传图片、选择参数和点击按钮，不调用或复刻 Tripo 私有接口。
 
+用户要求只复用当前已登录 Chrome 时，使用 [当前 Chrome 自动化链路](references/current-chrome.md)和 [MV3 扩展](extension/README.md)，不要运行启动另一浏览器的 CLI。0.5.1 的原生导出接续、防重和返回原页已真实验证；人形文本/多阶段动作、四足 Walk、GLB/FBX/OBJ 原生包已实际落盘。**四足文本动作受到平台限制，部分最新功能和最终设置快照补丁尚未完成浏览器验收。** 功能证据、设置和恢复规则见该文档；文件通过与角色美术通过分别记录。
+
+项目的重点是可恢复的 Studio 生产与文件交付。已有相关 API/CLI/Skill 和浏览器适配方案；[定位与架构](references/architecture.md)说明比较依据、各组件职责与当前缺口，[任务契约](references/task-contract.md)列出可导入的字段及运行时检查。
+
 - [仓库组成与自动化范围](#overview)
+- [只复用当前 Chrome 的入口](#current-chrome)
+- [任务契约与共享预算](references/task-contract.md)
+- [功能验收、设置与恢复坑点](references/current-chrome.md)
+- [定位、架构与已有相关方案](references/architecture.md)
 - [Windows 完整安装与使用指南](references/windows.md)
 - [安装依赖](#install)
 - [设置配置文件](#config)
@@ -24,6 +32,12 @@
 
 ```mermaid
 flowchart LR
+    Task["JSON 任务 / 自包含素材包"] --> Agent["Agent：核对输入、网页与模型"]
+    Agent --> Current["当前已登录 Chrome 的 Tripo 页"]
+    Current --> Ext["MV3 扩展：预算、防重、导出记录"]
+    Ext --> Downloads["Chrome 正常下载接口 / 原生下载关联"]
+    Downloads --> Checks["GLB、骨骼曲线、贴图与文件检查"]
+    Checks --> Handoff["视觉验收与交付 ZIP"]
     Input["本地三视图 inputs/"] --> CLI["Node.js 命令行队列"]
     CLI --> PW["Playwright 浏览器操作"]
     PW --> Browser["已登录的 Chrome / Edge"]
@@ -41,13 +55,26 @@ flowchart LR
 | 浏览器队列 | `tool/src/cli.js` | 扫描图片、登录、上传预览、提交生成、自动拓扑与纹理、保存状态 |
 | 页面操作 | `tool/src/tripo-page.js` | 定位网页控件、填入图片与参数、点击按钮、观察处理状态 |
 | 浏览器连接 | `tool/src/browser.js` | 启动专用浏览器，或通过 CDP 连接已启动的浏览器 |
-| 人物 Skill | `SKILL.md`、`references/` | 身份与服装核验、头身独立生产、付费防重、下载与验收流程 |
+| 当前 Chrome 扩展 | `extension/` | 任务导入、图片预览、预算预留、防重、阶段设置记录、原生导出自动接续 |
+| Agent Skill | `SKILL.md`、`references/` | 当前 Chrome 流程、恢复规则，以及可选人物头身独立生产 |
 | 交付校验 | `scripts/verify_character_delivery.py` | 检查 13 项核心文件、角色映射、SHA256、GLB、原生 OBJ 包及贴图引用 |
+| 动画文件诊断 | `scripts/verify_glb_motion.py` | 检查自包含 GLB、skin/joints/weights、动作时间与绑定目标的变化曲线 |
 | Windows 启动器 | `tool/start.ps1`、`scripts/invoke.ps1` | 创建首次配置、启动 Node 队列；可复用已有工具目录 |
 
 **直接运行 CLI 时**，`pipeline` 会自动完成“上传三视图 → HD → Smart Low Poly 拓扑 → 纹理”，默认目标 2,000 面、2K。它完成到 Studio 纹理结果与本地截图，**尚未内置自动下载、原 HD 归档、人物头身配对或骨骼绑定**。
 
 **运行人物 Skill 时**，agent 还需要图像生成/编辑、浏览器操作以及模型查看能力，并使用项目已有阶段脚本或按文档执行网页操作。人物配置采用独立头部＋A-Pose 全身，首次普通 Quad 目标分别为 30,000/10,000，Smart Low Poly 关闭，颜色纹理目标 4K。**这些人物项目适配器没有随本仓库完整打包**；安装 skill 不会凭空获得它们。新项目应先让 agent 检查能力、准备适配与免费预览，再进入付费生产。
+
+<a id="current-chrome"></a>
+
+## 只复用当前 Chrome
+
+1. 首次按 [扩展指南](extension/README.md)正常加载 `extension/` 并确认权限；升级已有安装时更新原目录、重载同一扩展，保留账本。不要另装第二份。
+2. 在原 Tripo 工作页导入 [任务 JSON](extension/task-example.json)或自包含素材包。示例的余额、额度和授权文字必须替换为实际任务数据；示例本身不授权支出。
+3. 让 Agent 按 [当前 Chrome 流程](references/current-chrome.md)核对 URL、输入、设置及实时积分，再串行执行可见网页操作。生成超时先查原任务，导出异常先查记录和文件。
+4. 实际导出的模型和贴图保留在资产项目，公共仓仅保存通用代码与脱敏验收说明。
+
+后面的 CLI 安装和专用浏览器命令只用于另行选择的队列模式；当前 Chrome 模式不需要执行它们。
 
 <a id="install"></a>
 
@@ -536,6 +563,7 @@ node src/cli.js resolve --config config.json --asset example_asset --as complete
 
 ```sh
 python3 -m unittest discover -s tests -v
+node --test extension/tests/*.test.cjs
 npm --prefix tool test
 ```
 
@@ -544,5 +572,8 @@ npm --prefix tool test
 - [CLI 命令实现](tool/src/cli.js)、[浏览器连接](tool/src/browser.js)、[网页操作](tool/src/tripo-page.js)
 - [人物参考与六图流程](references/character-workflow.md)、[原任务恢复](references/recovery.md)、[交付契约](references/delivery.md)
 - [交付校验器](scripts/verify_character_delivery.py)
+- [动画 GLB 诊断](scripts/verify_glb_motion.py)、[扩展离线检查](extension/tests/)
+
+扩展离线检查与 Python 文件检查不启动浏览器、不访问 Tripo、不扣费。`npm --prefix tool test` 还会启动本地模拟网页浏览器；用户要求只复用当前窗口时，不运行该项。CI 在独立 runner 上执行；Windows 未授予符号链接创建权限时只跳过对应两项路径测试，Ubuntu CI 执行它们。
 
 本地配置、登录资料、图片、运行记录和 `node_modules/` 已由 Git 忽略；用户的真实参考、模型、账号页面及任务 ID 保留在资产项目，不放入公共 skill 仓库。Tripo 及相关商标归其权利人所有；本项目与 Tripo 官方无隶属或背书关系。
