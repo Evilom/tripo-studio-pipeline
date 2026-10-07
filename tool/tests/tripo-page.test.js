@@ -119,10 +119,17 @@ test("TripoStudioPage 跑通 HD、智能拓扑和 2K 网页纹理", async (t) =>
   assert.equal(await page.locator("#smart").getAttribute("aria-checked"), "true");
   assert.equal(await page.locator("#quad").getAttribute("aria-pressed"), "true");
   assert.equal(await page.locator("#polygon-count").inputValue(), "2000");
+  // Hold the modeled processing state until submission has actually been observed.
+  // A short timer could finish before a busy CI runner returned from clickRetopology().
+  await page.evaluate(() => { window.holdMockRetopology = true; });
   await tripo.clickRetopology();
-  const retopologyStartedAt = Date.now();
-  await tripo.waitForRetopology();
-  assert.ok(Date.now() - retopologyStartedAt >= 1100, "应等待中文“重拓扑中”状态真正结束");
+  let returned = false;
+  const completion = tripo.waitForRetopology().then(() => { returned = true; });
+  await page.waitForTimeout(1500);
+  const returnedWhileProcessing = returned;
+  await page.evaluate(() => window.finishMockRetopology());
+  await completion;
+  assert.equal(returnedWhileProcessing, false, "中文“重拓扑中”仍可见时不能返回完成");
 
   await tripo.openTexture();
   await tripo.configureTexture();

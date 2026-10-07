@@ -1,4 +1,14 @@
 const {test}=require('node:test');const assert=require('node:assert/strict');const C=require('../studio-context.js');const P=require('../policy.js');
+test('Chinese workspace routes retain model identity and keep paid stages distinct',()=>{
+  const id='00000000-0000-4000-8000-000000000001';
+  const url='https://studio.tripo3d.ai/zh/workspace/retopology/example-'+id;
+  assert.equal(C.workspace(url).modelId,id);assert.equal(C.workspace(url).selectorScope,'/zh/workspace/retopology');
+  assert.doesNotThrow(()=>C.check('retopo',url));assert.throws(()=>C.check('generate',url));
+  for(const bad of ['https://example.com/workspace/generate','https://studio.tripo3d.ai/zh/assets','https://studio.tripo3d.ai/zh/workspace/retopology/one/two','https://user:secret@studio.tripo3d.ai/workspace/generate'])assert.throws(()=>C.workspace(bad));
+  const p={variant:'A',candidate:1,stage:'studio-operation',operationName:'Generate',page:'https://studio.tripo3d.ai/workspace/texture-edit/fixture'};
+  assert.equal(P.key(p),P.key({...p,page:p.page.replace('/workspace/','/zh/workspace/')}));
+  assert.notEqual(P.key(p),P.key({...p,page:p.page.replace('/texture-edit/','/texture-pbr/')}));
+});
 test('same Generate label cannot confuse model and text-motion routes',()=>{assert.doesNotThrow(()=>C.check('text-motion','https://studio.tripo3d.ai/workspace/animate/example'));assert.throws(()=>C.check('generate','https://studio.tripo3d.ai/workspace/animate/example'));assert.equal(C.matches('rig','Auto Rig 20'),true);assert.equal(C.matches('text-motion','Generate 20'),true);assert.equal(C.matches('studio-operation','Upgrade 20','Upgrade'),false);});
 test('manual public operations use route and operation identity while legacy keys remain intact',()=>{
   const p={variant:'A',candidate:1,stage:'studio-operation',operationName:'Generate',page:'https://studio.tripo3d.ai/workspace/texture-edit/fixture'};

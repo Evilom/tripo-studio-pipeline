@@ -18,8 +18,8 @@
     if (!validVariant(p.variant) || !stages.includes(p.stage) || !Number.isInteger(p.candidate) || p.candidate < 1 || p.candidate > 99) throw new Error('方案、阶段或候选编号无效。');
     if(p.stage==='studio-operation'){
       if(typeof p.operationName!=='string'||!p.operationName.trim()||p.operationName.length>80)throw Error('其他公开阶段需要明确的操作名称。');
-      const url=new URL(p.page);C.check(p.stage,p.page);
-      return JSON.stringify([p.variant,p.candidate,p.stage,url.pathname.split('/')[2],C.normalize(p.operationName)]);
+      const context=C.workspace(p.page);C.check(p.stage,p.page);
+      return JSON.stringify([p.variant,p.candidate,p.stage,context.route,C.normalize(p.operationName)]);
     }
     return JSON.stringify([p.variant,p.candidate,p.stage]);
   }

@@ -75,13 +75,13 @@
     if (!r?.ok) throw new Error(r?.error || '扩展后台未返回确认，停止操作。');
     return r.value;
   }
-  function configKey() { return `${$('stage').value}:${location.pathname.split('/').slice(0, 3).join('/')}`; }
+  function configKey() { return $('stage').value+':'+C.workspace(publicURL()).selectorScope; }
   function cfg() { return settings[configKey()] || {}; }
   function invalidate() { previewProof = null; $('verified').checked = false; $('previewtext').textContent = '设置已变更，请重新读取预览。'; }
   function publicURL() { return location.origin + location.pathname; }
   function pageId() { return (location.pathname.match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/ig) || []).at(-1) || ''; }
   function checkPage() {
-    if (location.origin !== 'https://studio.tripo3d.ai' || !location.pathname.startsWith('/workspace')) throw new Error('请在正常登录的 Tripo workspace 页面操作。');
+    C.workspace(publicURL());
     if (document.querySelector('iframe[src*="challenges.cloudflare.com"], iframe[src*="recaptcha"], input[type="password"]') || /verify you are human|checking your browser|验证您是人类|just a moment/i.test(document.title)) throw new Error('页面需要登录或真人验证，请用户在正常网页完成；助手暂停。');
   }
   function balance() {

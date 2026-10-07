@@ -1,0 +1,16 @@
+{
+  "schema": 1,
+  "name": "Example game asset",
+  "lowGlb": "low/model-low.glb",
+  "editSource": {
+    "fbx": "low/native/model.fbx",
+    "textureDirectory": "low/native/model.fbm"
+  },
+  "reference": "source/reference.png",
+  "previews": ["previews/front.png", "previews/side.png", "previews/back.png"],
+  "limits": {
+    "maxTriangles": 20000,
+    "maxTextureSize": 2048,
+    "maxArchiveBytes": 20000000
+  }
+}
