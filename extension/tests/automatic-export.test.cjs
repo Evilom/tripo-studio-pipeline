@@ -19,6 +19,15 @@ function harness({reject=false,saveFail=false,terminateAfterCall=false,store:pre
     changed:async delta=>{changed.forEach(fn=>fn(delta));await settle();}};
 }
 const fields={filename:'sample-walk.glb',extension:'glb',settings:{filename:'sample-walk.glb',extension:'glb',format:'GLB',skeleton:true,inPlace:true,animationCount:1,resolution:'4k'}};
+test('Chinese model page exports through the same guarded journal and restores its original locale',async()=>{
+  const h=harness(),chinese=page.replace('/workspace/','/zh/workspace/');
+  h.tab({id:5,url:chinese});
+  assert.equal((await h.send('arm',{...fields,page:chinese})).ok,true);
+  await h.navigate(source);assert.equal(h.calls(),1);assert.deepEqual(h.returns(),[{id:5,url:chinese}]);
+  await h.changed({id:7,state:{current:'complete'}});
+  assert.equal((await h.send('status',{page:chinese})).value[0].status,'complete');
+  h.tab({id:5,url:page});assert.equal((await h.send('arm',fields)).ok,false);
+});
 test('free export captures one same-tab URL, records Chrome completion, restores model and preserves paid budget',async()=>{
   const budget={schema:1,activeId:'existing',runs:{existing:{initialBalance:1005,maximumSpend:1000,events:[{quote:55}]}}};
   const h=harness({store:{'tripo-workflow-assistant-v1':budget}});

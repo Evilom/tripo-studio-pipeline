@@ -6,12 +6,16 @@
 
 它使用已登录账号的 **Tripo Studio 积分**。无需配置 Tripo API Key；脚本通过浏览器上传图片、选择参数和点击按钮，不调用或复刻 Tripo 私有接口。
 
-用户要求只复用当前已登录 Chrome 时，使用 [当前 Chrome 自动化链路](references/current-chrome.md)和 [MV3 扩展](extension/README.md)，不要运行启动另一浏览器的 CLI。0.5.1 的原生导出接续、防重和返回原页已真实验证；人形文本/多阶段动作、四足 Walk、GLB/FBX/OBJ 原生包已实际落盘。**四足文本动作受到平台限制，部分最新功能和最终设置快照补丁尚未完成浏览器验收。** 功能证据、设置和恢复规则见该文档；文件通过与角色美术通过分别记录。
+用户要求只复用当前已登录 Chrome 时，使用 [生产、恢复与交付管线](references/production-pipeline.md)、[当前 Chrome 验收矩阵](references/current-chrome.md)和 [MV3 扩展](extension/README.md)，不要运行启动另一浏览器的 CLI。0.5.1 的原生导出接续、防重和返回原页已有真实结果；人形文本/多阶段动作、四足 Walk、GLB/FBX/OBJ 原生包已实际落盘。0.6.0新增中文路径及导出适配，离线检查通过，重载后的中文真实验收仍待完成。平台限制、源码检查、文件检查和游戏质量分别记录。
+
+原高模保留在本地；给后续开发者默认发送精简低模包。新的[低模打包入口](references/low-delivery.md)按显式计划保留GLB、按需FBX及其材质、参考和预览，检查面数/贴图/字节上限、CRC与哈希，拒绝覆盖已有输出。一次实际交付从57.3MB减至9.7MB，接收方已核验领取；案例与权限边界见生产管线。
 
 项目的重点是可恢复的 Studio 生产与文件交付。已有相关 API/CLI/Skill 和浏览器适配方案；[定位与架构](references/architecture.md)说明比较依据、各组件职责与当前缺口，[任务契约](references/task-contract.md)列出可导入的字段及运行时检查。
 
 - [仓库组成与自动化范围](#overview)
 - [只复用当前 Chrome 的入口](#current-chrome)
+- [完整生产、恢复与云端交付流程](references/production-pipeline.md)
+- [低模精简打包与计划](references/low-delivery.md)
 - [任务契约与共享预算](references/task-contract.md)
 - [功能验收、设置与恢复坑点](references/current-chrome.md)
 - [定位、架构与已有相关方案](references/architecture.md)
@@ -59,6 +63,7 @@ flowchart LR
 | Agent Skill | `SKILL.md`、`references/` | 当前 Chrome 流程、恢复规则，以及可选人物头身独立生产 |
 | 交付校验 | `scripts/verify_character_delivery.py` | 检查 13 项核心文件、角色映射、SHA256、GLB、原生 OBJ 包及贴图引用 |
 | 动画文件诊断 | `scripts/verify_glb_motion.py` | 检查自包含 GLB、skin/joints/weights、动作时间与绑定目标的变化曲线 |
+| 低模交付 | `scripts/package_low_delivery.py`、`examples/delivery-plan.example.json` | 显式文件选择、几何/贴图/体积限制、完整材质与ZIP哈希验证 |
 | Windows 启动器 | `tool/start.ps1`、`scripts/invoke.ps1` | 创建首次配置、启动 Node 队列；可复用已有工具目录 |
 
 **直接运行 CLI 时**，`pipeline` 会自动完成“上传三视图 → HD → Smart Low Poly 拓扑 → 纹理”，默认目标 2,000 面、2K。它完成到 Studio 纹理结果与本地截图，**尚未内置自动下载、原 HD 归档、人物头身配对或骨骼绑定**。
@@ -72,7 +77,7 @@ flowchart LR
 1. 首次按 [扩展指南](extension/README.md)正常加载 `extension/` 并确认权限；升级已有安装时更新原目录、重载同一扩展，保留账本。不要另装第二份。
 2. 在原 Tripo 工作页导入 [任务 JSON](extension/task-example.json)或自包含素材包。示例的余额、额度和授权文字必须替换为实际任务数据；示例本身不授权支出。
 3. 让 Agent 按 [当前 Chrome 流程](references/current-chrome.md)核对 URL、输入、设置及实时积分，再串行执行可见网页操作。生成超时先查原任务，导出异常先查记录和文件。
-4. 实际导出的模型和贴图保留在资产项目，公共仓仅保存通用代码与脱敏验收说明。
+4. 原高模、原生包与账本保留在资产项目；用显式计划打包消费者需要的低模。外部上传后核对元数据，用户授权通知后记录领取回执。公共仓仅保存通用代码与脱敏验收说明。
 
 后面的 CLI 安装和专用浏览器命令只用于另行选择的队列模式；当前 Chrome 模式不需要执行它们。
 

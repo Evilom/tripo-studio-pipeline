@@ -92,12 +92,13 @@
         button.disabled = true;
         processing.hidden = false;
         processing.textContent = "重拓扑中";
-        setTimeout(() => {
+        window.finishMockRetopology = () => {
           processing.hidden = true;
           button.disabled = false;
           document.querySelector("#texture").disabled = false;
           document.querySelector("#texture-nav").hidden = false;
-        }, 1250);
+        };
+        if (!window.holdMockRetopology) setTimeout(window.finishMockRetopology, 1250);
       });
       document.querySelector("#texture-nav").addEventListener("click", () => document.querySelector("#texture-panel").hidden = false);
       for (const resolution of ["2k", "4k", "8k"]) {

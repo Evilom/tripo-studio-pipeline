@@ -21,12 +21,18 @@
     }
     return !!stages[stage]?.words.test(label);
   }
-  function check(stage,page){
+  function workspace(page){
     const url=new URL(page);
-    if(url.origin!=='https://studio.tripo3d.ai'||!url.pathname.startsWith('/workspace/'))throw Error('必须确认当前 Tripo workspace URL。');
+    const match=url.pathname.match(/^\/(zh\/)?workspace\/([a-z][a-z0-9-]*)(?:\/([^/]+))?\/?$/);
+    if(url.origin!=='https://studio.tripo3d.ai'||url.username||url.password||!match)throw Error('必须确认当前 Tripo workspace URL；支持原路径及 /zh/workspace。');
+    const id=match[3]?.match(/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i)?.[1];
+    return {route:match[2],locale:match[1]?'zh':'',modelId:id?.toLowerCase()||null,page:url.origin+url.pathname,selectorScope:'/'+(match[1]||'')+'workspace/'+match[2]};
+  }
+  function check(stage,page){
+    const context=workspace(page);
     if(!stages[stage])throw Error('未知阶段。');
     const route=stages[stage].route;
-    if(route&&url.pathname.split('/')[2]!==route)throw Error('当前页面与所选阶段不匹配；不要只凭 Generate 按钮文字判断。');
+    if(route&&context.route!==route)throw Error('当前页面与所选阶段不匹配；不要只凭 Generate 按钮文字判断。');
   }
   function settings(doc,stage){
     const values=[];
@@ -44,6 +50,6 @@
     }
     return values;
   }
-  root.TripoStudioContext={stages,matches,check,settings,normalize};
+  root.TripoStudioContext={stages,matches,workspace,check,settings,normalize};
   if(typeof module!=='undefined')module.exports=root.TripoStudioContext;
 })(globalThis);

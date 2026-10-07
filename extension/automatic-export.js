@@ -31,10 +31,9 @@ async function reconcileNativeDownloads(records,tab,modelId){
   if(dirty)await saveExportJournal(records);
 }
 function exportModelPage(raw){
-  const u=new URL(raw);
-  const id=u.pathname.match(/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\/?$/i)?.[1];
-  if(u.origin!=='https://studio.tripo3d.ai'||!u.pathname.startsWith('/workspace/')||!id)throw Error('自动导出只接受当前模型独立页面。');
-  return {modelId:id.toLowerCase(),page:u.origin+u.pathname};
+  const context=TripoStudioContext.workspace(raw);
+  if(!context.modelId)throw Error('自动导出只接受当前模型独立页面。');
+  return {modelId:context.modelId,page:context.page};
 }
 async function automaticExportOperation(m,sender){
   if(!originOK(sender)||!Number.isInteger(sender.tab?.id))throw Error('自动导出仅接受原 Tripo 主页面的扩展控件。');

@@ -11,12 +11,13 @@ description: Operate Tripo Studio through visible browser UI with a versioned ta
 
 先按用户指定的浏览器模式选择入口。用户要求复用当前 Chrome 时，不执行专用浏览器启动命令，也不创建新的 profile、无痕窗口或登录会话。另行使用 Windows CLI 时读 [Windows 指南](references/windows.md)，使用原生 PowerShell/Node 路径与命令。
 
-- **当前已登录 Chrome、模型生成和自动导出**：先读 [当前 Chrome 流程及验收边界](references/current-chrome.md)，再读 [扩展指南](extension/README.md)和 [任务契约](references/task-contract.md)。核对实际加载版本与当前 URL；使用环境提供且允许的浏览器工具操作同一标签页。
+- **当前已登录 Chrome、模型生成和自动导出**：先读 [生产管线](references/production-pipeline.md)和 [验收边界](references/current-chrome.md)，再按需读 [扩展指南](extension/README.md)和 [任务契约](references/task-contract.md)。核对实际加载版本与当前 URL；使用环境提供且允许的浏览器工具操作同一标签页。
 - **人物生产、批量头身资产**：先读 [人物工作流](references/character-workflow.md)。需要的是参考、生成、收取和验收的完整闭环。
 - **断线、超时、已接受任务或导出故障**：先读 [恢复与浏览器协议](references/recovery.md)，定位原项目最后接受的阶段后继续。
 - **仅扫描、预览或使用现有通用队列**：读 [通用队列命令](references/queue.md)。保留原有 `scan/preview/run/pipeline/status/resolve` 契约。
 - **检查双资产交付文件**：读 [交付记录与校验](references/delivery.md)，运行 [verify_character_delivery.py](scripts/verify_character_delivery.py)。脚本只读文件，不打开浏览器、不扣费、不修改验收状态。
 - **检查导出骨骼与动作**：运行 [verify_glb_motion.py](scripts/verify_glb_motion.py)并按需要加 `--require-animation`。文件检查不能替代姿态、比例、变形、根运动和游戏导入验收。
+- **给后续开发者打包低模**：读 [精简交付](references/low-delivery.md)，按显式计划运行 [package_low_delivery.py](scripts/package_low_delivery.py)。原高模留本地，默认保留GLB及按需FBX材质闭包；上传、权限与授权通知分别验证。
 
 用户只要求头部、全身或单个文件时，只处理该范围；13 项校验器用于完整双资产清单，不为满足它而扩展单资产任务。
 
